@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>アレルギー対応クイズ</title>
+<style>
+    body {
+        font-family: "Hiragino Sans", sans-serif;
+        margin: 20px;
+        background: #f8f7f3;
+    }
+    h1 {
+        text-align: center;
+    }
+    .question-box {
+        margin: 20px auto;
+        padding: 20px;
+        width: 90%;
+        max-width: 600px;
+        background: #fff;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+    }
+    .explain-box {
+        margin-top: 15px;
+        padding: 15px;
+        background: #eef7ff;
+        border-left: 5px solid #5aa0ff;
+        border-radius: 5px;
+    }
+    button {
+        display: block;
+        margin: 20px auto;
+        padding: 10px 20px;
+        font-size: 1.2em;
+        cursor: pointer;
+    }
+    #result {
+        text-align: center;
+        font-size: 1.4em;
+        margin-top: 20px;
+        font-weight: bold;
+    }
+</style>
+</head>
+<body>
+
+<h1>アレルギー対応クイズ（10問）</h1>
+
+<div id="quizContainer" class="question-box"></div>
+<div id="result"></div>
+
+<script>
+// =========================
+// ◆ 問題データ
+// =========================
+const questions = [
+    {
+        q: "Q1. アレルギー疾患とはどのような状態を指しますか？",
+        options: {
+            A: "風邪をひきやすい体質",
+            B: "体が無害なものに対して過剰な免疫反応を起こす状態",
+            C: "食べ物を消化しにくい体質",
+            D: "病気にかかりにくい状態"
+        },
+        answer: "B",
+        explanation: "アレルギーは、無害なものに体が過剰に反応する状態です。"
+    },
+    {
+        q: "Q2. 乳幼児のアナフィラキシー原因で最も多いものは？",
+        options: {
+            A: "気温の変化",
+            B: "食物アレルギー",
+            C: "外傷",
+            D: "ストレス"
+        },
+        answer: "B",
+        explanation: "乳幼児のアナフィラキシーの最多原因は食物アレルギーです。"
+    },
+    {
+        q: "Q3. 食物アレルギー対応の基本は？",
+        options: {
+            A: "少量なら提供してよい",
+            B: "食べたことがなくても与える",
+            C: "完全除去",
+            D: "保育士が独自判断"
+        },
+        answer: "C",
+        explanation: "医師の指示に基づき完全除去が原則です。"
+    },
+    {
+        q: "Q4. 確認に使用する重要書類は？",
+        options: {
+            A: "お便り帳",
+            B: "アレルギー疾患生活管理指導表",
+            C: "体温表",
+            D: "園だより"
+        },
+        answer: "B",
+        explanation: "医師が作成する生活管理指導表が正式な書類です。"
+    },
+    {
+        q: "Q5. アレルギー対応食の食器の特徴は？",
+        options: {
+            A: "黄色の食器",
+            B: "青色の食器",
+            C: "ピンク色の専用食器",
+            D: "透明な食器"
+        },
+        answer: "C",
+        explanation: "誤配膳防止のためピンク色が一般的です。"
+    },
+    {
+        q: "Q6. アレルギー対応食の配膳で正しいのは？",
+        options: {
+            A: "一般食と同時に配る",
+            B: "アレルギー食を先に配る",
+            C: "まとめて配る",
+            D: "子どもが取りに来る"
+        },
+        answer: "B",
+        explanation: "誤配膳を防ぐため先に配膳します。"
+    },
+    {
+        q: "Q7. アレルギー児のおかわり対応として正しいのは？",
+        options: {
+            A: "何度でもOK",
+            B: "他児の食事から分ける",
+            C: "原則おかわりなし",
+            D: "好きな食材だけOK"
+        },
+        answer: "C",
+        explanation: "誤食を避けるため原則おかわりは禁止です。"
+    },
+    {
+        q: "Q8. 気管支喘息の園児に必要な環境配慮は？",
+        options: {
+            A: "明るい照明",
+            B: "ほこりやダニの除去",
+            C: "外遊びを増やす",
+            D: "食事量を減らす"
+        },
+        answer: "B",
+        explanation: "環境アレルゲンを減らすことが重要です。"
+    },
+    {
+        q: "Q9. アナフィラキシーショックの特徴は？",
+        options: {
+            A: "鼻水だけ",
+            B: "少しかゆいだけ",
+            C: "血圧低下・意識障害・呼吸困難",
+            D: "くしゃみ1回"
+        },
+        answer: "C",
+        explanation: "生命に関わる重篤な症状が特徴です。"
+    },
+    {
+        q: "Q10. 除去食を解除する際に必要なものは？",
+        options: {
+            A: "子どもの希望",
+            B: "保育士の判断",
+            C: "医師の除去解除願い",
+            D: "保護者の口頭連絡"
+        },
+        answer: "C",
+        explanation: "必ず医師による解除願いが必要です。"
+    }
+];
+
+let index = 0;
+let score = 0;
+
+// 「表示A〜D」→「元のキーA〜D」を保存する
+let optionMap = {};
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+// =========================
+// ◆ 問題を表示
+// =========================
+function loadQuestion() {
+    const q = questions[index];
+
+    const entries = Object.entries(q.options);    // [["A","内容"], ...]
+    const shuffled = shuffle([...entries]);       // 内容だけシャッフル
+
+    const labels = ["A", "B", "C", "D"];          // 表示は固定
+    optionMap = {};
+
+    let html = `<h3>${q.q}</h3>`;
+
+    shuffled.forEach((item, i) => {
+        const originalKey = item[0];  // 元のA〜D
+        const text = item[1];
+        const label = labels[i];      // 表示用A〜D
+
+        optionMap[label] = originalKey; // 表示ラベル → 元のキーを保存
+
+        html += `
+            <label>
+                <input type="radio" name="answer" value="${label}">
+                ${label}. ${text}
+            </label><br>
+        `;
+    });
+
+    html += `<button onclick="submitAnswer()">回答する</button>`;
+    document.getElementById("quizContainer").innerHTML = html;
+}
+
+// =========================
+// ◆ 回答処理
+// =========================
+function submitAnswer() {
+    const selected = document.querySelector('input[name="answer"]:checked');
+    if (!selected) {
+        alert("答えを選んでください");
+        return;
+    }
+
+    const chosenLabel = selected.value;          // 表示上の A/B/C/D
+    const originalChoice = optionMap[chosenLabel]; // 元の A/B/C/D
+    const correctOriginal = questions[index].answer; // 元の正解 A/B/C/D
+
+    // ★ 正解の表示ラベルを逆検索（重要）
+    let correctLabel = "";
+    for (let label in optionMap) {
+        if (optionMap[label] === correctOriginal) {
+            correctLabel = label;  // 表示上の A/B/C/D が入る
+            break;
+        }
+    }
+
+    // 判定
+    if (originalChoice === correctOriginal) score++;
+
+    // 結果表示
+    document.getElementById("quizContainer").innerHTML = `
+        <h3>${questions[index].q}</h3>
+        <p><strong>あなたの回答：</strong> ${chosenLabel}</p>
+        <p><strong>正解：</strong> ${correctLabel}</p>
+
+        <div class="explain-box">
+            ${questions[index].explanation}
+        </div>
+
+        ${
+            index < questions.length - 1
+                ? `<button onclick="nextQuestion()">次の問題へ</button>`
+                : `<button onclick="showResult()">結果を見る</button>`
+        }
+    `;
+}
+
+function nextQuestion() {
+    index++;
+    loadQuestion();
+}
+
+function showResult() {
+    document.getElementById("quizContainer").innerHTML = "";
+    document.getElementById("result").innerHTML =
+        `あなたの得点は <span style="color:red;">${score} / 10</span> です！`;
+}
+
+loadQuestion();
+</script>
+
+</body>
+</html>
